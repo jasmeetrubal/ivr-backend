@@ -77,6 +77,57 @@ app.get("/", (req, res) => {
   });
 });
 
+// ─── DEBUG: Test Exotel connection with real response ─────────────────────────
+app.get("/api/debug", async (req, res) => {
+  try {
+    const apiKey    = process.env.EXOTEL_API_KEY;
+    const apiToken  = process.env.EXOTEL_API_TOKEN;
+    const sid       = process.env.EXOTEL_SID;
+    const subdomain = process.env.EXOTEL_SUBDOMAIN || "api.exotel.com";
+    const number    = process.env.EXOTEL_NUMBER;
+    const agent     = process.env.AGENT_1;
+
+    // Test call to Exotel — will show exact error or success
+    const postData = require("querystring").stringify({
+      From:     agent,
+      To:       agent,   // calls itself just to test credentials
+      CallerId: number,
+      TimeOut:  10,
+    });
+
+    const auth = Buffer.from(`${apiKey}:${apiToken}`).toString("base64");
+
+    const result = await new Promise((resolve) => {
+      const req2 = require("https").request({
+        hostname: subdomain,
+        path: `/v1/Accounts/${sid}/Calls/connect.json`,
+        method: "POST",
+        headers: {
+          "Authorization": `Basic ${auth}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Length": Buffer.byteLength(postData),
+        },
+      }, (r) => {
+        let body = "";
+        r.on("data", (c) => (body += c));
+        r.on("end", () => resolve({ httpStatus: r.statusCode, body }));
+      });
+      req2.on("error", (e) => resolve({ httpStatus: 0, body: e.message }));
+      req2.write(postData);
+      req2.end();
+    });
+
+    res.json({
+      debug: true,
+      config: { apiKey: apiKey?.slice(0,8)+"...", sid, subdomain, number, agent },
+      exotel_http_status: result.httpStatus,
+      exotel_raw_response: result.body,
+    });
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
+
 // ─── OUTBOUND: Click "Call" in UI ─────────────────────────────────────────────
 app.post("/api/call/outbound", async (req, res) => {
   try {
