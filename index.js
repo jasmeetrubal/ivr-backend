@@ -13,7 +13,7 @@ app.use(express.urlencoded({ extended: false }));
 function exotelRequest(path, data) {
   const sid = process.env.EXOTEL_SID;
   const token = process.env.EXOTEL_TOKEN;
-  const subdomain = process.env.EXOTEL_SUBDOMAIN || "api.exotel.com";
+  const subdomain = process.env.EXOTEL_SUBDOMAIN || "api.in.exotel.com";
   if (!sid || !token) throw new Error("EXOTEL_SID / EXOTEL_TOKEN not set");
 
   const postData = querystring.stringify(data);
